@@ -110,10 +110,15 @@ export class AssetDownloader {
         if (!url || url.startsWith('data:') || url.startsWith('blob:')) {
             return null;
         }
+        // 处理缺少协议前缀的URL
+        let fullUrl = url;
+        if (url.startsWith('//')) {
+            fullUrl = 'https:' + url;
+        }
         try {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 15000);
-            const response = await fetch(url, {
+            const response = await fetch(fullUrl, {
                 signal: controller.signal,
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
@@ -153,8 +158,13 @@ export class AssetDownloader {
      * URL转文件名
      */
     urlToFilename(url, contentType) {
+        // 处理缺少协议前缀的URL (//cdn.shopify.com/...)
+        let fullUrl = url;
+        if (url.startsWith('//')) {
+            fullUrl = 'https:' + url;
+        }
         try {
-            const parsed = new URL(url);
+            const parsed = new URL(fullUrl);
             const pathname = parsed.pathname;
             // 从路径提取文件名
             let filename = path.basename(pathname);

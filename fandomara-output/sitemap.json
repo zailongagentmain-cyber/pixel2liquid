@@ -1,0 +1,23 @@
+{
+  "entryUrl": "https://www.fandomara.com/",
+  "collectedAt": "2026-03-23T17:04:22.690Z",
+  "totalPages": 3,
+  "totalAssets": 193,
+  "pages": [
+    {
+      "url": "https://www.fandomara.com/",
+      "localPath": "index.html",
+      "title": "Cute Ita Bags & Love and Deepspace Fan Merch | FandoMara\nAmerican ExpressApple PayDiners ClubDiscoverGoogle PayJCBMastercardVisa"
+    },
+    {
+      "url": "https://www.fandomara.com/collections/all",
+      "localPath": "collections/all/index.html",
+      "title": "Ita Bags & Love and Deepspace Merch | FandoMara\nAmerican ExpressApple PayDiners ClubDiscoverGoogle PayJCBMastercardVisa"
+    },
+    {
+      "url": "https://www.fandomara.com/customer_authentication/redirect?locale=en&region_country=US",
+      "localPath": "customer_authentication/redirect/index.html",
+      "title": "Sign in - FandoMara"
+    }
+  ]
+}

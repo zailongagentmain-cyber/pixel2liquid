@@ -29,9 +29,10 @@ const __dirname = path.dirname(__filename);
 export class Spider {
   private options: Required<SpiderOptions>;
   private browser: Browser | null = null;
-  private state = {
+  private state: { visited: Set<string>; pending: string[]; context: any } = {
     visited: new Set<string>(),
     pending: [] as string[],
+    context: null,
   };
 
   constructor(options: SpiderOptions) {
@@ -138,7 +139,25 @@ export class Spider {
 
     this.browser = await chromium.launch(launchOptions);
 
-    // 设置默认User-Agent（BrowserContext在SiteCrawler中创建）
+    // 创建反检测上下文
+    const context = await this.browser.newContext({
+      viewport: { width: 1920, height: 1080 },
+      userAgent: this.options.userAgent || 
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      locale: 'en-US',
+      timezoneId: 'America/New_York',
+      ignoreHTTPSErrors: true,
+    });
+
+    // 添加反检测脚本
+    await context.addInitScript(() => {
+      Object.defineProperty(navigator, 'webdriver', {
+        get: () => undefined,
+      });
+      (window as any).chrome = { runtime: {} };
+    });
+
+    this.state.context = context;
   }
 
   /**

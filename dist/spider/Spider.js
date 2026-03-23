@@ -20,6 +20,7 @@ export class Spider {
     state = {
         visited: new Set(),
         pending: [],
+        context: null,
     };
     constructor(options) {
         this.options = {
@@ -105,7 +106,23 @@ export class Spider {
             launchOptions.proxy = { server: this.options.proxy };
         }
         this.browser = await chromium.launch(launchOptions);
-        // 设置默认User-Agent（BrowserContext在SiteCrawler中创建）
+        // 创建反检测上下文
+        const context = await this.browser.newContext({
+            viewport: { width: 1920, height: 1080 },
+            userAgent: this.options.userAgent ||
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            locale: 'en-US',
+            timezoneId: 'America/New_York',
+            ignoreHTTPSErrors: true,
+        });
+        // 添加反检测脚本
+        await context.addInitScript(() => {
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined,
+            });
+            window.chrome = { runtime: {} };
+        });
+        this.state.context = context;
     }
     /**
      * 关闭浏览器

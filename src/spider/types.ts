@@ -65,4 +65,5 @@ export interface SpiderOptions {
 export interface SpiderState {
   visited: Set<string>;
   pending: string[];
+  context: any; // BrowserContext
 }

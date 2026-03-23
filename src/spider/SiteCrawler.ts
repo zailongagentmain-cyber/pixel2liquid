@@ -82,26 +82,62 @@ export class SiteCrawler {
    * 采集单个页面
    */
   private async crawlPage(url: string): Promise<CollectedPage | null> {
+    // 跳过锚点和特殊链接
+    if (url.includes('#') || url.includes('javascript:') || url.includes('mailto:')) {
+      return null;
+    }
+
+    let context: any = null;
     try {
-      const context = await this.browser.newContext({
-        userAgent: this.options.userAgent || undefined,
+      context = await this.browser.newContext({
+        userAgent: this.options.userAgent || 
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         viewport: { width: 1920, height: 1080 },
+        locale: 'en-US',
+        timezoneId: 'America/New_York',
+        ignoreHTTPSErrors: true,
+      });
+
+      // 添加反检测脚本
+      await context.addInitScript(() => {
+        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+        (window as any).chrome = { runtime: {} };
       });
 
       const page = await context.newPage();
 
-      // 设置超时
-      page.setDefaultTimeout(this.options.timeout);
+      // 设置超时（增加以应对Cloudflare）
+      page.setDefaultTimeout(60000); // 60秒超时
 
-      // 访问页面
+      // 访问页面 - 使用domcontentloaded而不是networkidle
       const response = await page.goto(url, {
-        waitUntil: 'networkidle',
-        timeout: this.options.timeout,
+        waitUntil: 'domcontentloaded',
+        timeout: 60000,
       });
 
-      if (!response || !response.ok()) {
+      if (!response) {
         await context.close();
         return null;
+      }
+
+      // 等待页面稳定
+      await page.waitForLoadState('load', { timeout: 30000 }).catch(() => {});
+
+      // 额外等待让JS执行
+      await page.waitForTimeout(2000);
+
+      // 检测是否是Cloudflare挑战页面
+      const isCloudflare = await page.evaluate(() => {
+        const title = document.title.toLowerCase();
+        const body = document.body.innerText.toLowerCase();
+        return title.includes('cloudflare') || 
+               body.includes('checking your browser') ||
+               body.includes('turnstile');
+      });
+
+      if (isCloudflare) {
+        console.log(`  ⏳ Cloudflare验证中，等待...`);
+        await page.waitForTimeout(5000); // 等待验证完成
       }
 
       // 获取完整HTML
