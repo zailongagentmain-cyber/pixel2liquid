@@ -1,0 +1,13 @@
+{
+  "entryUrl": "https://example.com",
+  "collectedAt": "2026-03-23T16:52:59.091Z",
+  "totalPages": 1,
+  "totalAssets": 0,
+  "pages": [
+    {
+      "url": "https://example.com",
+      "localPath": "index.html",
+      "title": "Example Domain"
+    }
+  ]
+}
