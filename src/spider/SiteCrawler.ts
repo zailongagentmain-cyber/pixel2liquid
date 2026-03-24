@@ -109,10 +109,10 @@ export class SiteCrawler {
       // 设置超时（增加以应对Cloudflare）
       page.setDefaultTimeout(60000); // 60秒超时
 
-      // 访问页面 - 使用domcontentloaded而不是networkidle
+      // 访问页面 - 使用networkidle确保网络请求完成
       const response = await page.goto(url, {
-        waitUntil: 'domcontentloaded',
-        timeout: 60000,
+        waitUntil: 'networkidle',
+        timeout: 90000, // 90秒超时
       });
 
       if (!response) {
@@ -123,25 +123,28 @@ export class SiteCrawler {
       // 等待页面稳定
       await page.waitForLoadState('load', { timeout: 30000 }).catch(() => {});
 
-      // 额外等待让JS执行
-      await page.waitForTimeout(2000);
-
-      // 检测是否是Cloudflare挑战页面
+      // 检测是否是Cloudflare挑战页面（只等待1次，不反复等）
       const isCloudflare = await page.evaluate(() => {
         const title = document.title.toLowerCase();
         const body = document.body.innerText.toLowerCase();
-        return title.includes('cloudflare') || 
+        return title.includes('cloudflare') ||
                body.includes('checking your browser') ||
                body.includes('turnstile');
       });
 
       if (isCloudflare) {
         console.log(`  ⏳ Cloudflare验证中，等待...`);
-        await page.waitForTimeout(5000); // 等待验证完成
+        await page.waitForTimeout(5000);
       }
 
-      // 获取完整HTML
-      const html = await this.getFullHtml(page);
+      // 等待网络空闲（Shopify AJAX 请求完成）
+      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+
+      // 短暂等待 JS 执行（1秒足够获取页面结构）
+      await page.waitForTimeout(1000);
+
+      // 获取HTML
+      const html = await page.content();
 
       // 提取元数据
       const metadata = this.extractMetadata(html, url);
@@ -180,38 +183,11 @@ export class SiteCrawler {
   }
 
   /**
-   * 获取完整HTML（包含动态渲染内容）
+   * 获取完整HTML（已简化，不再滚动页面）
    */
   private async getFullHtml(page: Page): Promise<string> {
-    // 等待网络空闲
-    await page.waitForLoadState('networkidle');
-
-    // 滚动页面触发懒加载
-    await this.scrollPage(page);
-
-    // 获取HTML
+    // HTML 结构已在 crawlPage 中获取，这里直接返回
     return await page.content();
-  }
-
-  /**
-   * 滚动页面触发懒加载内容
-   */
-  private async scrollPage(page: Page): Promise<void> {
-    try {
-      await page.evaluate(async () => {
-        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-        
-        // 滚动到底部
-        window.scrollTo(0, document.body.scrollHeight);
-        await delay(500);
-        
-        // 再滚动回顶部
-        window.scrollTo(0, 0);
-        await delay(500);
-      });
-    } catch {
-      // 忽略滚动错误
-    }
   }
 
   /**

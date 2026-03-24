@@ -9,7 +9,7 @@ import fse from 'fs-extra';
 import * as path from 'path';
 export class AssetDownloader {
     assets = [];
-    concurrency = 5; // 并发数限制
+    concurrency = 2; // 降低并发以减少内存使用
     page;
     outputDir;
     constructor(page, outputDir) {

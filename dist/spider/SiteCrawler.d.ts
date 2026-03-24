@@ -22,13 +22,9 @@ export declare class SiteCrawler {
      */
     private crawlPage;
     /**
-     * 获取完整HTML（包含动态渲染内容）
+     * 获取完整HTML（已简化，不再滚动页面）
      */
     private getFullHtml;
-    /**
-     * 滚动页面触发懒加载内容
-     */
-    private scrollPage;
     /**
      * 从HTML中提取链接
      */

@@ -5,7 +5,13 @@
  * Usage: pixel2liquid <command> [options]
  */
 import { Command } from 'commander';
+import { spawn } from 'child_process';
+import * as path from 'path';
+import * as os from 'os';
+import { fileURLToPath } from 'url';
 import { Spider } from './spider/Spider.js';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const program = new Command();
 // 设置版本
 program
@@ -22,8 +28,52 @@ program
     .option('-m, --max-pages <number>', '最大采集页面数', '50')
     .option('--follow-external', '跟随外部链接（默认否）')
     .option('--no-headless', '显示浏览器窗口')
+    .option('-b, --background', '后台运行，不阻塞', false)
+    .option('--progress <file>', '进度文件路径')
+    .option('--async', '异步模式：HTML采集后立即返回，资源后台下载', false)
+    .option('--proxy-server', '启动本地预览服务器（仅在 --async 时有效）', false)
+    .option('--proxy-port <number>', '预览服务器端口', '3002')
     .action(async (url, options) => {
+    const progressFile = options.progress ||
+        path.join(os.tmpdir(), `spider-progress-${Date.now()}.json`);
     console.log('\n🕷️  Pixel2Liquid Spider\n');
+    // 后台模式：启动子进程运行 spider
+    if (options.background) {
+        // 构建命令参数（子进程不需要 --background 参数，否则会无限递归）
+        const args = [
+            'spider', url,
+            '-o', options.output,
+            '-m', options.maxPages,
+            '--progress', progressFile,
+        ];
+        if (options.proxy)
+            args.push('-p', options.proxy);
+        if (options.followExternal)
+            args.push('--follow-external');
+        if (!options.headless)
+            args.push('--no-headless');
+        if (options.async)
+            args.push('--async');
+        if (options.proxyServer)
+            args.push('--proxy-server');
+        if (options.proxyPort)
+            args.push('--proxy-port', options.proxyPort);
+        const child = spawn('node', [
+            path.join(__dirname, 'cli.js'),
+            ...args
+        ], {
+            stdio: 'inherit',
+            detached: true,
+            cwd: path.dirname(__dirname), // 项目根目录
+        });
+        child.unref();
+        console.log(`🚀 Spider 已启动（后台运行）`);
+        console.log(`📄 进度文件: ${progressFile}`);
+        console.log(`🔍 查看进度: cat ${progressFile}`);
+        console.log(`\n💡 Agent 现在可以处理其他任务了！\n`);
+        process.exit(0);
+    }
+    // 同步/异步模式
     const spider = new Spider({
         url,
         outputDir: options.output,
@@ -31,11 +81,16 @@ program
         maxPages: parseInt(options.maxPages),
         followExternal: options.followExternal,
         headless: options.headless,
+        progressFile,
+        asyncMode: options.async,
+        startProxyServer: options.proxyServer,
+        proxyPort: parseInt(options.proxyPort),
     });
     try {
         await spider.crawl();
     }
     catch (error) {
+        await spider.fail(error.message);
         console.error(`\n❌ 采集失败: ${error.message}`);
         process.exit(1);
     }

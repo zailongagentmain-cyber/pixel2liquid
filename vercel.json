@@ -4,15 +4,13 @@
   "outputDirectory": "./fandomara-output",
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    { "source": "/collections/", "destination": "/collections/all", "permanent": true },
+    { "source": "/collections", "destination": "/collections/all", "permanent": true }
+  ],
   "rewrites": [
-    {
-      "source": "/:path*",
-      "destination": "/:path*/index.html"
-    },
-    {
-      "source": "/:path*.html",
-      "destination": "/:path*.html"
-    }
+    { "source": "/:path*/", "destination": "/:path*/index.html" },
+    { "source": "/:path*", "destination": "/:path*/index.html" }
   ],
   "headers": [
     {

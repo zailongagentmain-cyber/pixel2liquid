@@ -59,6 +59,25 @@ export interface SpiderOptions {
   timeout?: number;
   userAgent?: string;
   headless?: boolean;
+  progressFile?: string;  // 进度文件路径
+  asyncMode?: boolean;    // 异步模式：HTML采集后立即返回，资源后台下载
+  startProxyServer?: boolean;  // 是否启动本地预览服务器
+  proxyPort?: number;     // 预览服务器端口
+}
+
+// Spider进度
+export interface SpiderProgress {
+  status: 'running' | 'completed' | 'failed' | 'idle';
+  url: string;
+  outputDir: string;
+  total: number;
+  current: number;
+  currentPage: string;
+  collectedUrls: string[];
+  errors: string[];
+  startedAt: string;
+  updatedAt: string;
+  error?: string;
 }
 
 // 内部状态

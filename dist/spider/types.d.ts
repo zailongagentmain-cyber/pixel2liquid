@@ -47,6 +47,23 @@ export interface SpiderOptions {
     timeout?: number;
     userAgent?: string;
     headless?: boolean;
+    progressFile?: string;
+    asyncMode?: boolean;
+    startProxyServer?: boolean;
+    proxyPort?: number;
+}
+export interface SpiderProgress {
+    status: 'running' | 'completed' | 'failed' | 'idle';
+    url: string;
+    outputDir: string;
+    total: number;
+    current: number;
+    currentPage: string;
+    collectedUrls: string[];
+    errors: string[];
+    startedAt: string;
+    updatedAt: string;
+    error?: string;
 }
 export interface SpiderState {
     visited: Set<string>;

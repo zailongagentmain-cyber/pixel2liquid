@@ -14,7 +14,7 @@ import type { CollectedPage, Asset } from './types.js';
 
 export class AssetDownloader {
   private assets: Asset[] = [];
-  private concurrency = 5; // 并发数限制
+  private concurrency = 2; // 降低并发以减少内存使用
   private page: CollectedPage;
   private outputDir: string;
 
