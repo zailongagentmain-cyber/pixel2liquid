@@ -51,6 +51,7 @@ export interface SpiderOptions {
     asyncMode?: boolean;
     startProxyServer?: boolean;
     proxyPort?: number;
+    staticMode?: boolean;
 }
 export interface SpiderProgress {
     status: 'running' | 'completed' | 'failed' | 'idle';

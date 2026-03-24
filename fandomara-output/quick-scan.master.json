@@ -1,0 +1,12 @@
+{
+  "entryUrl": "https://www.fandomara.com/customer_authentication/redirect?locale=en&region_country=US",
+  "scannedAt": "2026-03-24T06:19:09.208Z",
+  "totalPages": 1,
+  "pages": [
+    {
+      "url": "https://www.fandomara.com/customer_authentication/redirect?locale=en&region_country=US",
+      "localPath": "customer_authentication/redirect/index.html",
+      "title": "Sign in - FandoMara"
+    }
+  ]
+}

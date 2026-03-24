@@ -31,6 +31,7 @@ program
     .option('-b, --background', '后台运行，不阻塞', false)
     .option('--progress <file>', '进度文件路径')
     .option('--async', '异步模式：HTML采集后立即返回，资源后台下载', false)
+    .option('--static', '静态镜像模式：不下载资源，保留原始CDN URL（用于完整站点克隆部署）', false)
     .option('--proxy-server', '启动本地预览服务器（仅在 --async 时有效）', false)
     .option('--proxy-port <number>', '预览服务器端口', '3002')
     .action(async (url, options) => {
@@ -54,6 +55,8 @@ program
             args.push('--no-headless');
         if (options.async)
             args.push('--async');
+        if (options.static)
+            args.push('--static');
         if (options.proxyServer)
             args.push('--proxy-server');
         if (options.proxyPort)
@@ -85,6 +88,7 @@ program
         asyncMode: options.async,
         startProxyServer: options.proxyServer,
         proxyPort: parseInt(options.proxyPort),
+        staticMode: options.static,
     });
     try {
         await spider.crawl();
