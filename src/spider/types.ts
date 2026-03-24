@@ -63,6 +63,7 @@ export interface SpiderOptions {
   asyncMode?: boolean;    // 异步模式：HTML采集后立即返回，资源后台下载
   startProxyServer?: boolean;  // 是否启动本地预览服务器
   proxyPort?: number;     // 预览服务器端口
+  staticMode?: boolean;   // 静态镜像模式：不下载资源，保留原始CDN URL
 }
 
 // Spider进度

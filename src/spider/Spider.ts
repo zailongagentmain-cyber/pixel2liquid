@@ -57,6 +57,7 @@ export class Spider {
       asyncMode: options.asyncMode ?? false,
       startProxyServer: options.startProxyServer ?? false,
       proxyPort: options.proxyPort ?? 3002,
+      staticMode: options.staticMode ?? false,
     };
     this.proxyPort = this.options.proxyPort;
   }
@@ -77,7 +78,13 @@ export class Spider {
     console.log(`📍 URL: ${this.options.url}`);
     console.log(`📦 最大页面: ${this.options.maxPages}`);
     console.log(`🔗 跟随外部链接: ${this.options.followExternal ? '是' : '否'}`);
-    console.log(`📋 模式: ${this.options.asyncMode ? '异步(立即返回)' : '同步(等待下载)'}`);
+    if (this.options.staticMode) {
+      console.log(`📋 模式: 静态镜像 (保留原始CDN URL)`);
+    } else if (this.options.asyncMode) {
+      console.log(`📋 模式: 异步(立即返回，资源后台下载)`);
+    } else {
+      console.log(`📋 模式: 同步(等待下载)`);
+    }
     if (this.options.asyncMode && this.options.startProxyServer) {
       console.log(`🔮 预览服务器: 启动 (端口 ${this.proxyPort})`);
     }
@@ -86,8 +93,8 @@ export class Spider {
     // 创建输出目录
     await this.prepareOutputDir();
 
-    // 初始化异步组件
-    if (this.options.asyncMode) {
+    // 初始化异步组件（static模式不需要）
+    if (this.options.asyncMode && !this.options.staticMode) {
       await this.initAsyncMode();
     }
 
@@ -398,6 +405,29 @@ export class Spider {
 
         // 释放大字符串内存
         page.html = processedHtml;
+      } else if (this.options.staticMode) {
+        // 静态镜像模式：不下载资源，保留原始 CDN URL
+        page.html = html;
+
+        // 收集资源URL（仅记录，不下载）
+        const assetUrls = this.collectAssetUrls(html);
+        page.images = assetUrls.filter(a => a.type === 'image').map(a => ({ url: a.url, localPath: a.url, type: 'image' as const }));
+        page.fonts = assetUrls.filter(a => a.type === 'font').map(a => ({ url: a.url, localPath: a.url, type: 'font' as const }));
+        page.js = assetUrls.filter(a => a.type === 'js').map(a => ({ url: a.url, localPath: a.url, type: 'js' as const }));
+
+        console.log(`    📄 静态采集: ${assetUrls.length} 个资源URL (保留原URL)`);
+
+        // 保存原始 HTML（不做任何路径替换）
+        const pageDir = path.dirname(page.localPath);
+        await fse.ensureDir(path.join(this.options.outputDir, pageDir));
+        await fse.writeFile(
+          path.join(this.options.outputDir, page.localPath),
+          html,
+          'utf-8'
+        );
+
+        // 释放大字符串内存
+        page.html = html;
       } else {
         // 同步模式：下载所有资源
         page.html = html;
