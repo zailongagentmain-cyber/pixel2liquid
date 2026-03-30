@@ -10,6 +10,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { fileURLToPath } from 'url';
 import { Spider } from './spider/Spider.js';
+import { Transformer } from './transform/index.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const program = new Command();
@@ -99,19 +100,73 @@ program
         process.exit(1);
     }
 });
-// Transform命令 - 转换为主题（待实现）
+// Transform命令 - 转换为主题
 program
     .command('transform')
     .description('🔄  将采集结果转换为Shopify主题')
     .argument('<source>', '采集结果目录')
+    .option('-s, --shop <shop>', 'Shopify store (store.myshopify.com)')
+    .option('-t, --token <token>', 'Admin API token')
     .option('-o, --output <dir>', '输出目录', './theme')
     .option('-n, --name <name>', '主题名称', 'my-theme')
-    .action((source, options) => {
-    console.log('\n🔄  转换功能开发中...\n');
-    console.log(`源目录: ${source}`);
-    console.log(`输出目录: ${options.output}`);
-    console.log(`主题名称: ${options.name}`);
-    console.log('\n请期待下一版本！\n');
+    .option('--skip-confirm', '跳过确认直接执行', false)
+    .action(async (source, options) => {
+    console.log('\n🔄  Pixel2Liquid Transform\n');
+    console.log(`📂 源目录: ${source}`);
+    console.log(`📁 输出目录: ${options.output}`);
+    console.log(`🎨 主题名称: ${options.name}`);
+    // Build Shopify config if provided
+    let shopifyConfig = null;
+    if (options.shop && options.token) {
+        shopifyConfig = {
+            shop: options.shop,
+            token: options.token,
+        };
+        console.log(`🛒 Shopify店铺: ${options.shop}`);
+    }
+    else {
+        console.log('⚠️  未提供 Shopify 配置，将使用 Mock 模式');
+    }
+    // Create transformer
+    const config = {
+        sourceDir: source,
+        outputDir: path.resolve(options.output),
+        shopify: shopifyConfig || { shop: 'mock-store.myshopify.com', token: 'mock-token' },
+        dryRun: !shopifyConfig,
+    };
+    const transformer = new Transformer(config);
+    try {
+        // Run transformation
+        const summary = await transformer.transform();
+        // Ask for confirmation if not skipped and not dry run
+        if (!options.skipConfirm && !config.dryRun) {
+            const readline = await import('readline');
+            const rl = readline.createInterface({
+                input: process.stdin,
+                output: process.stdout,
+            });
+            const answer = await new Promise(resolve => {
+                rl.question('\n是否执行确认的操作? (y/N): ', resolve);
+            });
+            rl.close();
+            if (answer.toLowerCase() === 'y') {
+                // Execute confirmed operations
+                await transformer.executeConfirmed(summary);
+            }
+            else {
+                console.log('\n⏭️  已跳过执行');
+            }
+        }
+        else if (config.dryRun) {
+            console.log('\n⚠️  Mock 模式，跳过 API 操作');
+        }
+        // Generate theme files
+        await transformer.generateThemeFiles();
+    }
+    catch (error) {
+        console.error(`\n❌ 转换失败: ${error.message}`);
+        process.exit(1);
+    }
 });
 // Mix命令 - 混合元素（待实现）
 program
